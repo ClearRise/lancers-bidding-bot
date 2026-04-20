@@ -1,0 +1,28 @@
+{
+  "name": "lancers-notification-bot",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Monitors lancers.jp dashboard for new tasks and notifies a bid service",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "session:save": "tsx scripts/save-session.ts",
+    "toast:register": "tsx scripts/register-windows-toast.ts"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "clipboardy": "^4.0.0",
+    "dotenv": "^16.4.5",
+    "node-notifier": "^10.0.1",
+    "playwright": "^1.49.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "@types/node-notifier": "^8.0.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
