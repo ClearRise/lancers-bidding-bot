@@ -70,7 +70,7 @@ export async function runMonitorLoop(signal: AbortSignal): Promise<void> {
       console.log(`[monitor][cycle ${cycle}][task ${task.workId}] result=matched`);
       try {
         await notifyDesktopMatch(task);
-        // await notifyBidBot(task);
+        await notifyBidBot(task);
         seen.add(task.workId);
         await persistSeen();
         console.log(`[monitor][cycle ${cycle}][task ${task.workId}] notify=success`);

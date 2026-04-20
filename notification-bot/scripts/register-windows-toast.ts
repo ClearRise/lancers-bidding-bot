@@ -12,7 +12,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
-import { arch, env, execPath } from "node:process";
+import { arch, cwd, env, execPath } from "node:process";
 
 const require = createRequire(import.meta.url);
 const notifierRoot = path.dirname(
@@ -32,6 +32,12 @@ const shortcutName =
   env.WINDOWS_TOAST_SHORTCUT_NAME ??
   "Lancers Notification Bot\\Lancers Notification Bot.lnk";
 const targetExe = env.WINDOWS_TOAST_REGISTER_EXE ?? execPath;
+const appIconPathRaw = env.NOTIFICATION_APP_ICON_PATH;
+const appIconPath = appIconPathRaw
+  ? path.isAbsolute(appIconPathRaw)
+    ? appIconPathRaw
+    : path.resolve(cwd(), appIconPathRaw)
+  : undefined;
 
 async function main(): Promise<void> {
   if (!existsSync(snoreExe)) {
@@ -45,6 +51,14 @@ async function main(): Promise<void> {
   }
 
   const args = ["-install", shortcutName, targetExe, appId];
+  if (appIconPath) {
+    if (!existsSync(appIconPath)) {
+      console.error("NOTIFICATION_APP_ICON_PATH not found:\n  " + appIconPath);
+      process.exit(1);
+    }
+    // 5th arg sets Start Menu shortcut icon used by Windows toast app header.
+    args.push(appIconPath);
+  }
   console.log("Running:", snoreExe, args.join(" "));
   const r = spawnSync(snoreExe, args, { stdio: "inherit", shell: false });
   if (r.status !== 0) {

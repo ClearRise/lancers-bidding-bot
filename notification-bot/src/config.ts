@@ -28,7 +28,7 @@ const envSchema = z.object({
     (v) => (v === "" || v === undefined ? "true" : v),
     z.enum(["true", "false"]).transform((x) => x !== "false"),
   ),
-  /** Absolute or cwd-relative path to toast icon; default is `src/download.jpg` beside the app. */
+  /** Absolute or cwd-relative path to toast icon; default is `assets/icons/lancers-badge.jpg`. */
   NOTIFICATION_ICON_PATH: z.preprocess(emptyToUndef, z.string().optional()),
   /**
    * Windows: passed to SnoreToast as `-appID`. Must match the ID used with `npm run toast:register`

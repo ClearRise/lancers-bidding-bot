@@ -8,6 +8,6 @@
   "aiFilter": {
     "enabled": true,
     "model": "openai/gpt-5.2",
-    "maxSnippetChars": 1200
+    "maxSnippetChars": 2000
   }
 }

@@ -8,8 +8,14 @@ import { config } from "./config.js";
 import type { ScrapedTask } from "./types.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-/** Lancers-style icon next to this module (`src/download.jpg`). */
-const DEFAULT_NOTIFICATION_ICON = path.join(__dirname, "download.jpg");
+/** Default toast image: `assets/icons/lancers-badge.jpg` (package root). */
+const DEFAULT_NOTIFICATION_ICON = path.join(
+  __dirname,
+  "..",
+  "assets",
+  "icons",
+  "lancers-badge.jpg",
+);
 
 const COPY_URL_LABEL = "Copy URL";
 
