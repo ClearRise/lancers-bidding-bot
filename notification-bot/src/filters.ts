@@ -9,14 +9,16 @@ function normalize(s: string): string {
  * Returns true if the task passes keyword / budget filters.
  */
 export function isTaskSuitable(task: ScrapedTask): boolean {
-  const hay = normalize(`${task.title} ${task.snippet}`);
+  const normalizedSnippet = normalize(task.snippet);
 
-  for (const ex of config.excludeKeywords) {
-    if (ex && hay.includes(normalize(ex))) return false;
+  for (const keyword of config.excludeKeywords) {
+    if (keyword && normalizedSnippet.includes(normalize(keyword))) return false;
   }
 
-  if (config.matchKeywords.length > 0) {
-    const any = config.matchKeywords.some((k) => k && hay.includes(normalize(k)));
+  if (config.includeKeywords.length > 0) {
+    const any = config.includeKeywords.some(
+      (keyword) => keyword && normalizedSnippet.includes(normalize(keyword)),
+    );
     if (!any) return false;
   }
 

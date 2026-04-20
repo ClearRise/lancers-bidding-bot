@@ -41,6 +41,7 @@ export async function runMonitorLoop(signal: AbortSignal): Promise<void> {
       if (seen.has(task.workId)) continue;
 
       if (!isTaskSuitable(task)) {
+        console.log(`[not suitable] ${task.workId} ${task.title.slice(0, 80)}`);
         seen.add(task.workId);
         await persistSeen();
         continue;
