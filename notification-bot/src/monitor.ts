@@ -9,11 +9,12 @@ import { notifyDesktopMatch } from "./desktop-notify.js";
 export async function runMonitorLoop(signal: AbortSignal): Promise<void> {
   const seen = await loadSeenIds(config.seenIdsPath);
   let bootstrapDone = seen.size > 0 || !config.bootstrapSilent;
-  console.log(`Loaded ${seen.size} known work id(s). Dashboard: ${config.dashboardUrl}`);
+  let cycle = 0;
+  console.log(`[monitor] startup: loaded ${seen.size} known work id(s)`);
+  console.log(`[monitor] startup: dashboard=${config.dashboardUrl}`);
+  console.log(`[monitor] startup: refresh_interval_ms=${config.refreshIntervalMs}`);
   if (!bootstrapDone) {
-    console.log(
-      "BOOTSTRAP_SILENT: first refresh will record current listings without notifying.",
-    );
+    console.log("[monitor] startup: bootstrap_silent enabled, first cycle stores ids only");
   }
 
   const { browser, context } = await createBrowserContext();
@@ -24,39 +25,65 @@ export async function runMonitorLoop(signal: AbortSignal): Promise<void> {
   };
 
   const tick = async () => {
+    cycle += 1;
+    const cycleStart = Date.now();
+    console.log(`[monitor][cycle ${cycle}] start`);
+    console.log(`[monitor][cycle ${cycle}] step=navigate`);
     await page.goto(config.dashboardUrl, { waitUntil: "domcontentloaded", timeout: 60_000 });
     await new Promise((r) => setTimeout(r, 800));
 
+    console.log(`[monitor][cycle ${cycle}] step=scrape`);
     const tasks = await scrapeTasksFromPage(page);
+    console.log(`[monitor][cycle ${cycle}] scraped=${tasks.length}`);
 
     if (!bootstrapDone) {
       for (const task of tasks) seen.add(task.workId);
       await persistSeen();
       bootstrapDone = true;
-      console.log(`[bootstrap] recorded ${tasks.length} work id(s), no notifications sent.`);
+      console.log(
+        `[monitor][cycle ${cycle}] bootstrap_complete recorded=${tasks.length} notified=0`,
+      );
+      console.log(`[monitor][cycle ${cycle}] end elapsed_ms=${Date.now() - cycleStart}`);
       return;
     }
 
-    for (const task of tasks) {
-      if (seen.has(task.workId)) continue;
+    let seenSkipped = 0;
+    let notMatched = 0;
+    let matched = 0;
+    let notifyFailed = 0;
 
-      if (!isTaskSuitable(task)) {
-        console.log(`[not suitable] ${task.workId} ${task.title.slice(0, 80)}`);
+    for (const task of tasks) {
+      if (seen.has(task.workId)) {
+        seenSkipped += 1;
+        continue;
+      }
+      console.log(`[monitor][cycle ${cycle}][task ${task.workId}] evaluate title="${task.title.slice(0, 80)}"`);
+      if (!(await isTaskSuitable(task))) {
+        notMatched += 1;
+        console.log(`[monitor][cycle ${cycle}][task ${task.workId}] result=not_matched`);
         seen.add(task.workId);
         await persistSeen();
         continue;
       }
 
-      console.log(`[match] ${task.workId} ${task.title.slice(0, 80)}`);
+      matched += 1;
+      console.log(`[monitor][cycle ${cycle}][task ${task.workId}] result=matched`);
       try {
         await notifyDesktopMatch(task);
         // await notifyBidBot(task);
         seen.add(task.workId);
         await persistSeen();
+        console.log(`[monitor][cycle ${cycle}][task ${task.workId}] notify=success`);
       } catch (err) {
-        console.error(`[notify failed] ${task.workId}`, err);
+        notifyFailed += 1;
+        console.error(`[monitor][cycle ${cycle}][task ${task.workId}] notify=failed`, err);
       }
     }
+
+    console.log(
+      `[monitor][cycle ${cycle}] summary scraped=${tasks.length} seen_skipped=${seenSkipped} not_matched=${notMatched} matched=${matched} notify_failed=${notifyFailed}`,
+    );
+    console.log(`[monitor][cycle ${cycle}] end elapsed_ms=${Date.now() - cycleStart}`);
   };
 
   try {
@@ -75,7 +102,9 @@ export async function runMonitorLoop(signal: AbortSignal): Promise<void> {
       });
     }
   } finally {
+    console.log("[monitor] shutdown: closing browser context");
     await context.close();
     await browser.close();
+    console.log("[monitor] shutdown: done");
   }
 }

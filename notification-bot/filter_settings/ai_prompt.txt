@@ -1,0 +1,16 @@
+You are classifying freelance project listings.
+
+Judge whether this project is suitable based on relevance to at least one keyword from INCLUDE_KEYWORDS.
+Be strict and focus on semantic relevance, not just exact string matching.
+
+Return only JSON with this exact shape:
+{"suitable": true|false, "reason": "short reason in english"}
+
+INCLUDE_KEYWORDS:
+{{INCLUDE_KEYWORDS}}
+
+PROJECT_TITLE:
+{{TITLE}}
+
+PROJECT_SNIPPET:
+{{SNIPPET}}

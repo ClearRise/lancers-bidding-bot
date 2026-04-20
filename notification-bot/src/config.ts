@@ -35,6 +35,7 @@ const envSchema = z.object({
    * (see KDE SnoreToast: Start Menu shortcut + appID replaces the default "SnoreToast" header).
    */
   WINDOWS_TOAST_APP_ID: z.string().default("Lancers.NotificationBot"),
+  OPENAI_API_KEY: z.preprocess(emptyToUndef, z.string().optional()),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -50,6 +51,18 @@ const filterSettingsSchema = z.object({
   minBudgetJpy: z.number().int().nonnegative().nullable().optional(),
   maxBudgetJpy: z.number().int().nonnegative().nullable().optional(),
   skipIfBudgetUnknown: z.boolean().optional(),
+  keywordFilter: z
+    .object({
+      enabled: z.boolean().optional(),
+    })
+    .optional(),
+  aiFilter: z
+    .object({
+      enabled: z.boolean().optional(),
+      model: z.string().min(1).optional(),
+      maxSnippetChars: z.number().int().positive().optional(),
+    })
+    .optional(),
 });
 
 function resolveFromSrc(relativePathFromSrc: string): string {
@@ -73,6 +86,16 @@ function loadKeywordFile(relativePathFromSrc: string): string[] {
       error,
     );
     return [];
+  }
+}
+
+function loadTextFile(relativePathFromSrc: string): string {
+  const filePath = resolveFromSrc(relativePathFromSrc);
+  try {
+    return fs.readFileSync(filePath, "utf8").trim();
+  } catch (error) {
+    console.warn(`[config] Failed to load text file from ${filePath}:`, error);
+    return "";
   }
 }
 
@@ -122,4 +145,10 @@ export const config = {
   windowsToastAppId: e.WINDOWS_TOAST_APP_ID,
   includeKeywords: loadKeywordFile("../filter_settings/include_keywords"),
   excludeKeywords: loadKeywordFile("../filter_settings/exclude_keywords"),
+  keywordFilterEnabled: filterSettings.keywordFilter?.enabled ?? true,
+  aiFilterEnabled: filterSettings.aiFilter?.enabled ?? true,
+  aiModel: filterSettings.aiFilter?.model ?? "gpt-4o-mini",
+  aiMaxSnippetChars: filterSettings.aiFilter?.maxSnippetChars ?? 1200,
+  aiPromptTemplate: loadTextFile("../filter_settings/ai_prompt.txt"),
+  openaiApiKey: e.OPENAI_API_KEY,
 };

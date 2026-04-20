@@ -33,7 +33,6 @@ function normalizeUrl(href: string): string {
  * (other `.p-search-job-media__number` nodes under e.g. `.p-search-job-media__propose-link`).
  */
 export async function scrapeTasksFromPage(page: Page): Promise<ScrapedTask[]> {
-  console.log("Scraping tasks from page...");
   const items = await page.evaluate(() => {
     const rows: {
       workId: string;
