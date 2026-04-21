@@ -1,17 +1,11 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { config } from "./config.js";
-import { enqueueUnique, loadQueue, saveQueue, type QueuedTask } from "./queue-store.js";
+import { enqueueTask, loadQueue } from "./queue-store.js";
 import { error, log } from "./logger.js";
 
 type NotifyPayload = {
   source?: string;
   workId?: string;
-  url?: string;
-  title?: string;
-  snippet?: string;
-  budgetMinJpy?: number | null;
-  budgetMaxJpy?: number | null;
-  budgetDisplayText?: string | null;
 };
 
 function readBody(req: IncomingMessage): Promise<string> {
@@ -25,15 +19,8 @@ function readBody(req: IncomingMessage): Promise<string> {
   });
 }
 
-function isValidPayload(payload: NotifyPayload): payload is Required<Pick<NotifyPayload, "workId" | "url" | "title" | "snippet">> & NotifyPayload {
-  return (
-    typeof payload.workId === "string" &&
-    payload.workId.length > 0 &&
-    typeof payload.url === "string" &&
-    payload.url.length > 0 &&
-    typeof payload.title === "string" &&
-    typeof payload.snippet === "string"
-  );
+function isValidPayload(payload: NotifyPayload): payload is Required<Pick<NotifyPayload, "workId">> & NotifyPayload {
+  return typeof payload.workId === "string" && payload.workId.length > 0;
 }
 
 function json(res: ServerResponse, status: number, body: unknown): void {
@@ -43,12 +30,24 @@ function json(res: ServerResponse, status: number, body: unknown): void {
 }
 
 export async function startApiServer(signal: AbortSignal): Promise<void> {
-  let queue = await loadQueue(config.bidQueuePath);
-  log("api", `loaded queue_size=${queue.length}`);
+  return startApiServerWithHooks(signal);
+}
+
+type ApiHooks = {
+  onTaskQueued?: () => void;
+};
+
+export async function startApiServerWithHooks(
+  signal: AbortSignal,
+  hooks: ApiHooks = {},
+): Promise<void> {
+  const initialQueue = await loadQueue(config.bidQueuePath);
+  log("api", `loaded queue_size=${initialQueue.length}`);
 
   const server = createServer(async (req, res) => {
     try {
       if (req.method === "GET" && req.url === "/health") {
+        const queue = await loadQueue(config.bidQueuePath);
         return json(res, 200, { ok: true, queueSize: queue.length });
       }
 
@@ -66,27 +65,14 @@ export async function startApiServer(signal: AbortSignal): Promise<void> {
           return json(res, 400, { ok: false, error: "invalid_payload" });
         }
 
-        const queued: QueuedTask = {
-          workId: payload.workId,
-          url: payload.url,
-          title: payload.title,
-          snippet: payload.snippet,
-          budgetMinJpy: payload.budgetMinJpy ?? null,
-          budgetMaxJpy: payload.budgetMaxJpy ?? null,
-          budgetDisplayText: payload.budgetDisplayText ?? null,
-          queuedAt: new Date().toISOString(),
-          source: payload.source ?? "unknown",
-        };
-
-        const next = enqueueUnique(queue, queued);
-        queue = next.queue;
-        if (next.added) {
-          await saveQueue(config.bidQueuePath, queue);
-          log("api", `queued work_id=${queued.workId} queue_size=${queue.length}`);
+        const result = await enqueueTask(config.bidQueuePath, payload.workId);
+        if (result.added) {
+          log("api", `queued work_id=${payload.workId} queue_size=${result.queueSize}`);
+          hooks.onTaskQueued?.();
         } else {
-          log("api", `duplicate_ignored work_id=${queued.workId}`);
+          log("api", `duplicate_ignored work_id=${payload.workId}`);
         }
-        return json(res, 200, { ok: true, queued: next.added, queueSize: queue.length });
+        return json(res, 200, { ok: true, queued: result.added, queueSize: result.queueSize });
       }
 
       json(res, 404, { ok: false, error: "not_found" });

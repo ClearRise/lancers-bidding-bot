@@ -1,10 +1,13 @@
 import "dotenv/config";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { z } from "zod";
 
 const emptyToUndefined = (v: unknown) => (v === "" || v === undefined ? undefined : v);
 
 const schema = z.object({
-  LANCERS_DASHBOARD_URL: z.string().url(),
+  LANCERS_DASHBOARD_URL: z.string().url().default("https://www.lancers.jp/work/search"),
   STORAGE_STATE_PATH: z.string().default("./storage-state.json"),
   HEADLESS: z.preprocess(
     (v) => (v === "" || v === undefined ? "true" : v),
@@ -15,11 +18,7 @@ const schema = z.object({
   MAX_BIDS_PER_CYCLE: z.coerce.number().int().positive().default(2),
   MIN_BUDGET_JPY: z.preprocess(emptyToUndefined, z.coerce.number().int().nonnegative().optional()),
   MAX_BUDGET_JPY: z.preprocess(emptyToUndefined, z.coerce.number().int().nonnegative().optional()),
-  DEFAULT_PROPOSAL_TEXT: z.string().min(1),
-  DEFAULT_BID_AMOUNT_JPY: z.preprocess(
-    emptyToUndefined,
-    z.coerce.number().int().nonnegative().optional(),
-  ),
+  BUDGET_DEFINITION_RATE: z.coerce.number().min(0).default(0.5),
   DRY_RUN: z.preprocess(
     (v) => (v === "" || v === undefined ? "true" : v),
     z.enum(["true", "false"]).transform((x) => x !== "false"),
@@ -28,6 +27,10 @@ const schema = z.object({
   BID_BOT_SECRET: z.preprocess(emptyToUndefined, z.string().optional()),
   BID_QUEUE_PATH: z.string().default("./bid-queue.json"),
   ENABLE_MONITOR: z.preprocess(
+    (v) => (v === "" || v === undefined ? "false" : v),
+    z.enum(["true", "false"]).transform((x) => x !== "false"),
+  ),
+  ENABLE_AI_PROPOSAL: z.preprocess(
     (v) => (v === "" || v === undefined ? "false" : v),
     z.enum(["true", "false"]).transform((x) => x !== "false"),
   ),
@@ -41,6 +44,21 @@ if (!parsed.success) {
 
 const e = parsed.data;
 
+function resolveFromSrc(relativePathFromSrc: string): string {
+  const currentFilePath = fileURLToPath(import.meta.url);
+  const currentDir = path.dirname(currentFilePath);
+  return path.resolve(currentDir, relativePathFromSrc);
+}
+
+function loadTextFile(relativePathFromSrc: string): string {
+  const filePath = resolveFromSrc(relativePathFromSrc);
+  try {
+    return fs.readFileSync(filePath, "utf8").trim();
+  } catch {
+    return "";
+  }
+}
+
 export const config = {
   dashboardUrl: e.LANCERS_DASHBOARD_URL,
   storageStatePath: e.STORAGE_STATE_PATH,
@@ -50,11 +68,12 @@ export const config = {
   maxBidsPerCycle: e.MAX_BIDS_PER_CYCLE,
   minBudgetJpy: e.MIN_BUDGET_JPY,
   maxBudgetJpy: e.MAX_BUDGET_JPY,
-  proposalText: e.DEFAULT_PROPOSAL_TEXT,
-  defaultBidAmountJpy: e.DEFAULT_BID_AMOUNT_JPY,
+  budgetDefinitionRate: e.BUDGET_DEFINITION_RATE,
   dryRun: e.DRY_RUN,
   bidBotPort: e.BID_BOT_PORT,
   bidBotSecret: e.BID_BOT_SECRET,
   bidQueuePath: e.BID_QUEUE_PATH,
   enableMonitor: e.ENABLE_MONITOR,
+  enableAiProposal: e.ENABLE_AI_PROPOSAL,
+  proposalAiPromptTemplate: loadTextFile("../filter_settings/proposal_prompt.txt"),
 };

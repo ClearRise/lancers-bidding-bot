@@ -12,6 +12,17 @@ export type BidCandidate = TaskSummary & {
   reason: string;
 };
 
+export type TaskDetail = {
+  workId: string;
+  url: string;
+  title: string;
+  description: string;
+  budgetText: string | null;
+  budgetMinJpy: number | null;
+  budgetMaxJpy: number | null;
+  deadline: string | null;
+};
+
 export type BidResult = {
   workId: string;
   attemptedAt: string;

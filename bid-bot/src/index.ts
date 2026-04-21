@@ -1,17 +1,20 @@
 import { config } from "./config.js";
-import { startApiServer } from "./api-server.js";
-import { run } from "./monitor.js";
+import { startApiServer, startApiServerWithHooks } from "./api-server.js";
+import { startMonitorWorker } from "./monitor.js";
 
 const controller = new AbortController();
 process.on("SIGINT", () => controller.abort());
 process.on("SIGTERM", () => controller.abort());
 
 async function main(): Promise<void> {
-  const tasks: Promise<void>[] = [startApiServer(controller.signal)];
   if (config.enableMonitor) {
-    tasks.push(run(controller.signal));
+    const worker = await startMonitorWorker(controller.signal);
+    await startApiServerWithHooks(controller.signal, {
+      onTaskQueued: worker.trigger,
+    });
+    return;
   }
-  await Promise.all(tasks);
+  await startApiServer(controller.signal);
 }
 
 main().catch((err) => {

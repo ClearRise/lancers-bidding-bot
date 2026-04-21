@@ -7,8 +7,17 @@ import { z } from "zod";
 const emptyToUndef = (v: unknown) =>
   v === "" || v === undefined ? undefined : v;
 
+function csvToList(s: string | undefined): string[] {
+  if (!s?.trim()) return [];
+  return s
+    .split(",")
+    .map((x) => x.trim())
+    .filter(Boolean);
+}
+
 const envSchema = z.object({
   LANCERS_DASHBOARD_URL: z.string().url(),
+  LANCERS_DASHBOARD_URLS: z.preprocess(emptyToUndef, z.string().optional()),
   STORAGE_STATE_PATH: z.string().default("./storage-state.json"),
   COOKIES_PATH: z.preprocess(emptyToUndef, z.string().optional()),
   REFRESH_INTERVAL_MS: z.coerce.number().int().positive().default(30_000),
@@ -129,6 +138,10 @@ const filterSettings = loadFilterSettings();
 
 export const config = {
   dashboardUrl: e.LANCERS_DASHBOARD_URL,
+  dashboardUrls: (() => {
+    const urls = csvToList(e.LANCERS_DASHBOARD_URLS);
+    return urls.length > 0 ? urls : [e.LANCERS_DASHBOARD_URL];
+  })(),
   storageStatePath: e.STORAGE_STATE_PATH,
   cookiesPath: e.COOKIES_PATH,
   refreshIntervalMs: e.REFRESH_INTERVAL_MS,

@@ -1,0 +1,62 @@
+Create a natural Japanese proposal message for Lancers based on the conditions below.
+
+General rules:
+- Write in practical, natural Japanese (no AI-like tone).
+- Keep it simple and readable, around 300 to 800 Japanese characters.
+- Do not use salesy or exaggerated wording (for example, "high quality" or "best solution").
+- Do not emphasize titles like "I am an engineer."
+- Keep it grounded in practical experience.
+- Use short paragraphs (1 to 2 sentences each).
+- Adjust all wording naturally to the project details.
+
+Required structure:
+1) Introduction
+Use this exact text:
+「はじめまして。
+ECサイトから業務システムまで幅広く開発を行っており、設計〜実装まで対応しています。」
+
+2) Fit / capability
+Naturally state that you can handle this project as-is.
+If relevant, mention you have handled many similar projects.
+
+3) Understanding + related experience
+Briefly describe key practical points/challenges inferred from the project details.
+If useful, include at least 5 relevant links/examples (balanced by technical and business relevance when unclear).
+
+4) What you can provide + brief solution approach
+Describe concrete deliverables/tasks in function-level or work-level terms.
+If timeline is clear (or you propose one), include day/hour-level rough plan.
+Do not mention price unless explicitly required.
+
+5) Questions (if needed)
+Add 2 to 3 easy-to-answer questions only when needed
+(scope ambiguity, priority features, preferred stack, environment, etc.).
+
+6) Collaboration style (long-term)
+Only if it appears to be a continuous project, add one sentence that you can support from a broader long-term perspective.
+
+7) Reassurance
+Add a short, soft sentence about communication ease/reliability.
+
+8) Closing
+Close naturally and include:
+「まずは一度お話できれば嬉しいです。」
+
+Prohibited:
+- Long self-introduction
+- List of abstract generic words only
+- Obvious template-like sales copy
+- Unnecessary jargon dumping
+
+Output format:
+- Output only the final proposal text in Japanese.
+- No explanation, no JSON, no markdown.
+
+Task context:
+- Work ID: {{WORK_ID}}
+- Title: {{TITLE}}
+- Description: {{DESCRIPTION}}
+- Budget Text: {{BUDGET_TEXT}}
+- Budget Min JPY: {{BUDGET_MIN_JPY}}
+- Budget Max JPY: {{BUDGET_MAX_JPY}}
+- Deadline: {{DEADLINE}}
