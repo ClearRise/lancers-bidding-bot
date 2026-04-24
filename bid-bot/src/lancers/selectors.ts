@@ -11,8 +11,7 @@ export const selectors = {
   ndaAgreementCheckbox: "#ProposalIsAgreement",
   proposalEstimateTextarea: "#ProposalEstimate",
   proposalDescriptionTextarea: "#ProposalDescription",
-  estimateDeliverDateInput: ".react-datepicker-wrapper .react-datepicker__input-container input[type='text']",
-  estimatePriceInput:
-    ".css-zjik7 input[type='number'], input[type='number'][step='1000'][max='100000000'], input.css-lte772[type='number']",
+  estimateDeliverDateInput: ".react-datepicker__input-container input",
+  estimatePriceInput: ".css-zjik7 input[type='number']",
   submitButton: "#form_end, input[name='send'][type='submit'], button[type='submit']",
 };

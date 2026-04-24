@@ -4,7 +4,7 @@ import { scrapeTasksFromPage } from "./extract-tasks.js";
 import { isTaskSuitable } from "./filters.js";
 import type { ScrapedTask } from "./types.js";
 import { loadSeenIds, saveSeenIds } from "./seen-store.js";
-import { notifyBidBot, verifyBidBotConnectionAtStartup } from "./notify-bid-bot.js";
+import { notifyBidBot } from "./notify-bid-bot.js";
 import { notifyMatchedTask } from "./notify-desktop.js";
 
 export async function runMonitorLoop(signal: AbortSignal): Promise<void> {
@@ -59,10 +59,6 @@ export async function runMonitorLoop(signal: AbortSignal): Promise<void> {
   console.log(`[monitor] startup: refresh_interval_ms=${config.refreshIntervalMs}`);
   if (!(seen.size > 0 || !config.bootstrapSilent)) {
     console.log("[monitor] startup: bootstrap_silent enabled, first cycle stores ids only");
-  }
-  if (config.bidBotUrl) {
-    console.log("[monitor] startup: checking bid-bot connectivity");
-    await verifyBidBotConnectionAtStartup();
   }
 
   const { browser, context } = await createBrowserContext();
@@ -130,9 +126,14 @@ export async function runMonitorLoop(signal: AbortSignal): Promise<void> {
           console.log(`[monitor][process ${processCount}][task ${task.workId}] notifying desktop match`);
           await notifyMatchedTask(task);
           console.log(`[monitor][process ${processCount}][task ${task.workId}] notifying bid bot`);
-          await notifyBidBot(task);
+          void notifyBidBot(task).catch((err) => {
+            console.error(
+              `[monitor][process ${processCount}][task ${task.workId}] notify_bid_bot=failed`,
+              err,
+            );
+          });
           await markSeen(task.workId);
-          console.log(`[monitor][process ${processCount}][task ${task.workId}] notify=success`);
+          console.log(`[monitor][process ${processCount}][task ${task.workId}] notify=enqueued`);
         } catch (err) {
           console.error(`[monitor][process ${processCount}][task ${task.workId}] notify=failed`, err);
         }

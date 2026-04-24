@@ -1,5 +1,4 @@
 import clipboard from "clipboardy";
-import { config } from "./config.js";
 import {
   isWindowsDesktopActionSupported,
   normalizeDesktopAction,
@@ -8,8 +7,6 @@ import {
 import type { ScrapedTask } from "./types.js";
 
 const COPY_URL_LABEL = "Copy URL";
-const CONTINUE_LABEL = "OK";
-const SHUTDOWN_LABEL = "Cancel";
 
 function formatBudget(task: ScrapedTask): string {
   if (task.budgetDisplayText) return task.budgetDisplayText;
@@ -46,34 +43,5 @@ export async function notifyMatchedTask(task: ScrapedTask): Promise<void> {
   } catch (err) {
     const messageText = err instanceof Error ? err.message : String(err);
     console.error("[desktop-notification-service] notify matched task failed:", messageText);
-  }
-}
-
-export async function confirmContinueWithoutBidBot(errorMessage: string): Promise<boolean> {
-  const useActions = isWindowsDesktopActionSupported() && config.desktopNotification;
-  if (!useActions) {
-    console.error(
-      "[desktop-notification-service] bid-bot is unreachable and interactive confirmation is unavailable on this platform.",
-    );
-    return false;
-  }
-
-  console.error("[desktop-notification-service] bid-bot delivery failed:", errorMessage);
-  console.log("[desktop-notification-service] waiting for user choice: OK=continue, Cancel=shutdown");
-
-  try {
-    const result = await sendDesktopNotification({
-      title: "Bid Bot connection failed",
-      message:
-        "Bid-bot API server is unreachable.\nOK: continue without bid-bot\nCancel: shutdown notification-bot",
-      actions: [CONTINUE_LABEL, SHUTDOWN_LABEL],
-      wait: true,
-    });
-    const action = normalizeDesktopAction(result.response, result.metadata);
-    return action === "ok";
-  } catch (err) {
-    const messageText = err instanceof Error ? err.message : String(err);
-    console.error("[desktop-notification-service] confirmation toast failed:", messageText);
-    return false;
   }
 }

@@ -1,12 +1,16 @@
 import type { Page } from "playwright";
 import { selectors } from "./selectors.js";
 import { config } from "../config.js";
-import { generateProposalText } from "../ai-proposal.js";
+// import { generateProposalText } from "../ai-proposal-openai.js";
+// import { generateProposalText } from "../ai-proposal-base44.js";
+// import { generateProposalText } from "../ai-proposal.js";
+// import { generateProposalText } from "../ai-proposal-groq.js";
+import { generateProposalText } from "../ai-proposal-mistral.js";
 import type { BidResult, TaskDetail } from "../types.js";
 
 const STATIC_ESTIMATE_TEXT = `詳細はメッセージにてご相談できればと思っております。`;
 
-function calculateEstimatePrice(task: TaskDetail): number | null {
+async function calculateEstimatePrice(task: TaskDetail): Promise<number | null> {
   const min = task.budgetMinJpy;
   const max = task.budgetMaxJpy;
   let estimated: number | null = null;
@@ -30,15 +34,17 @@ function toDeliverDate(deadline: string | null): string {
     const m = deadline.match(/(\d{4})年0?(\d{1,2})月0?(\d{1,2})日/);
     if (m) {
       const yyyy = m[1];
-      const month = String(Number(m[2]));
-      const day = m[3].padStart(2, "0");
+      const month = String(Number(m[2])).padStart(2, "0");
+      const day = String(Number(m[3])).padStart(2, "0");
       return `${yyyy}-${month}-${day}`;
     }
   }
 
   const d = new Date();
   d.setDate(d.getDate() + 7);
-  return `${d.getFullYear()}-${d.getMonth() + 1}-${String(d.getDate()).padStart(2, "0")}`;
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${month}-${day}`;
 }
 
 async function ensureNdaAgreement(page: Page): Promise<void> {
@@ -108,89 +114,187 @@ async function setEstimatePriceValue(page: Page, value: number): Promise<boolean
 }
 
 export async function submitBid(page: Page, task: TaskDetail): Promise<BidResult> {
+  const stepHistory: NonNullable<BidResult["stepHistory"]> = [];
+  const recordStep = (
+    step: string,
+    status: "ok" | "skipped" | "failed",
+    message?: string,
+  ) => {
+    stepHistory.push({
+      step,
+      status,
+      ...(message ? { message } : {}),
+      at: new Date().toISOString(),
+    });
+  };
+
+  console.log("[bid] submitting bid for task: ", task.workId);
   if (config.dryRun) {
+    recordStep("dry-run", "skipped", "DRY_RUN enabled");
     return {
       workId: task.workId,
       attemptedAt: new Date().toISOString(),
       status: "skipped",
       reason: "dry-run",
+      stepHistory,
     };
   }
 
-  await ensureNdaAgreement(page);
-
-  console.log("proposal estimate filling...");
-  const estimate = page.locator(selectors.proposalEstimateTextarea).first();
-  if (await estimate.count()) {
-    await estimate.fill(STATIC_ESTIMATE_TEXT);
+  const proposalDescription = page.locator(selectors.proposalDescriptionTextarea).first();
+  if ((await proposalDescription.count()) === 0) {
+    console.log("[bid] cannot submit on this task (proposal description field not found)");
+    recordStep("form-check", "skipped", "proposal description field not found");
+    return {
+      workId: task.workId,
+      attemptedAt: new Date().toISOString(),
+      status: "skipped",
+      reason: "proposal_description_field_not_found",
+      stepHistory,
+    };
   }
 
-  console.log("ai proposal creating...");
-  const aiProposal = await generateProposalText(task).catch(() => null);
-  const finalProposal =
-    aiProposal ?? "はじめまして。募集内容を確認しました。詳細をすり合わせの上で迅速に対応いたします。";
+  // 1) NDA checkbox: only handle when present.
+  const ndaCheckbox = page.locator(selectors.ndaAgreementCheckbox).first();
+  if ((await ndaCheckbox.count()) > 0) {
+    await ensureNdaAgreement(page);
+    recordStep("nda-agreement", "ok");
+  } else {
+    recordStep("nda-agreement", "skipped", "field not found");
+  }
+
+  // 2) Fill estimate text area.
+  console.log("[bid] proposal estimate filling...");
+  const estimate = page.locator(selectors.proposalEstimateTextarea).first();
+  const estimateCount = await estimate.count();
+  if (estimateCount > 0) {
+    await estimate.fill(STATIC_ESTIMATE_TEXT);
+    recordStep("proposal-estimate-fill", "ok");
+  } else {
+    recordStep("proposal-estimate-fill", "skipped", "field not found");
+  }
+
+  console.log("[bid] ai proposal creating...");
+  const aiProposal = await generateProposalText(task).catch((error) => {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`[bid] AI proposal generation threw an unexpected error: ${message}`);
+    return null;
+  });
   
-  console.log("proposal description filling...");
-  const proposalDescription = page.locator(selectors.proposalDescriptionTextarea).first();
-  if (!(await proposalDescription.count())) {
+  if(!aiProposal) {
+    recordStep("ai-proposal-generation", "failed", "ai proposal generation failed");
     return {
       workId: task.workId,
       attemptedAt: new Date().toISOString(),
       status: "failed",
-      reason: "proposal_description_field_not_found",
+      reason: "ai_proposal_generation_failed",
+      stepHistory,
     };
   }
-  await proposalDescription.fill(finalProposal);
+  
+  console.log("[bid] proposal created");
+  console.log("[bid] ============proposal start================");
+  console.log(aiProposal);
+  console.log("[bid] ============proposal end================");
 
-  console.log("deliver date filling...");
-  const deliverDate = page.locator(selectors.estimateDeliverDateInput).first();
-  if (await deliverDate.count()) {
-    await deliverDate.fill(toDeliverDate(task.deadline));
+  // 3) Fill proposal detail text area.
+  console.log("[bid] proposal description filling...");
+  try {
+    const finalProposal =
+      aiProposal ?? "はじめまして。募集内容を確認しました。詳細をすり合わせの上で迅速に対応いたします。";
+    await proposalDescription.scrollIntoViewIfNeeded().catch(() => undefined);
+    await proposalDescription.fill(finalProposal);
+    recordStep("proposal-description-fill", "ok");
+  } catch {
+    recordStep("proposal-description-fill", "failed", "fill failed");
+    return {
+      workId: task.workId,
+      attemptedAt: new Date().toISOString(),
+      status: "failed",
+      reason: "proposal_description_fill_failed",
+      stepHistory,
+    };
   }
 
-  console.log("estimate price filling...");
-  const estimatePrice = calculateEstimatePrice(task);
-  console.log("estimate price:", estimatePrice);
+  // 4) Fill estimate date.
+  console.log("[bid] deliver date filling: ", toDeliverDate(task.deadline));
+  const deliverDate = page.locator(selectors.estimateDeliverDateInput).first();
+  const deliverDateCount = await deliverDate.count();
+  if (deliverDateCount > 0) {
+    await deliverDate.fill(toDeliverDate(task.deadline));
+    recordStep("deliver-date-fill", "ok", toDeliverDate(task.deadline));
+  } else {
+    recordStep("deliver-date-fill", "skipped", "field not found");
+  }
+
+  // 5) Fill estimate price.
+  const estimatePrice = await calculateEstimatePrice(task);
+  console.log("[bid] estimate price filling: ", estimatePrice);
   if (estimatePrice != null) {
     const ok = await setEstimatePriceValue(page, estimatePrice);
     if (!ok) {
-      console.log("estimate price input not found");
+      console.log("[bid] estimate price filling failed");
+      recordStep("estimate-price-fill", "failed", `value=${estimatePrice}`);
     } else {
-      console.log("estimate price applied");
+      recordStep("estimate-price-fill", "ok", `value=${estimatePrice}`);
     }
+  } else {
+    recordStep("estimate-price-fill", "skipped", "value not computable");
   }
-
-  console.log("submit button clicking...");
+  
+  // 6) Click submit button.
+  console.log("[bid] submit button clicking...");
   const submit = page.locator(selectors.submitButton).first();
-  if (!(await submit.count())) {
+  const submitCount = await submit.count();
+  if (submitCount === 0) {
+    recordStep("submit-click", "failed", "submit button not found");
     return {
       workId: task.workId,
       attemptedAt: new Date().toISOString(),
       status: "failed",
       reason: "submit_button_not_found",
+      stepHistory,
     };
   }
-  await Promise.all([
-    page.waitForLoadState("domcontentloaded"),
-    submit.click(),
-  ]);
-  
-  // Final confirmation page: wait for load, then try final submit.
-  await page.waitForLoadState("domcontentloaded");
+
+  // 7) Wait for next page load after first submit.
+  // await Promise.all([
+  //   page.waitForLoadState("domcontentloaded"),
+  //   submit.click(),
+  // ]);
+  await page.waitForTimeout(500);
+  await submit.click();
+  await page.waitForTimeout(500);
+  recordStep("submit-click", "ok");
+
+  // 8) Click final submit button after the page is loaded.
   const finalSubmit = page.locator("#form_end").first();
-  if (await finalSubmit.isVisible().catch(() => false)) {
-    console.log("final submit button found");
+  try {
+    await finalSubmit.waitFor({ state: "visible", timeout: 10000 });
+    console.log("[bid] final submit button found");
+    recordStep("final-submit-check", "ok", "final submit button found");
     await Promise.all([
       page.waitForLoadState("domcontentloaded"),
-      // finalSubmit.click(),
+      finalSubmit.click(),
     ]);
-  } else {
-    console.log("final submit button not found");
+    await page.waitForTimeout(500);
+    recordStep("final-submit-click", "ok");
+  } catch {
+    console.log("[bid] final submit button not found or timed out");
+    recordStep("final-submit-check", "failed", "final submit button not found or timed out");
+    return {
+      workId: task.workId,
+      attemptedAt: new Date().toISOString(),
+      status: "failed",
+      reason: "final_submit_button_not_found",
+      stepHistory,
+    };
   }
 
+  console.log("[bid] bid submitted successfully");
   return {
     workId: task.workId,
     attemptedAt: new Date().toISOString(),
     status: "submitted",
+    stepHistory,
   };
 }

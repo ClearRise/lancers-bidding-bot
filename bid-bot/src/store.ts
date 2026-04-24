@@ -1,6 +1,18 @@
 import fs from "node:fs/promises";
 
-type BidHistory = Record<string, { attemptedAt: string; status: string; reason?: string }>;
+type BidHistoryEntry = {
+  attemptedAt: string;
+  status: string;
+  reason?: string;
+  stepHistory?: Array<{
+    step: string;
+    status: "ok" | "skipped" | "failed";
+    message?: string;
+    at: string;
+  }>;
+};
+
+type BidHistory = Record<string, BidHistoryEntry>;
 
 export async function loadHistory(path: string): Promise<BidHistory> {
   try {

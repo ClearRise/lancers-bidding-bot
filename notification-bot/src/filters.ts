@@ -1,6 +1,7 @@
 import { config } from "./config.js";
 import { isTaskSuitableByAi } from "./ai-filter-test.js";
 // import { isTaskSuitableByAi } from "./ai-filter-openai.js";
+// import { isTaskSuitableByAi } from "./ai-filter-deepseek.js";
 import type { ScrapedTask } from "./types.js";
 
 function normalize(s: string): string {

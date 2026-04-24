@@ -28,4 +28,10 @@ export type BidResult = {
   attemptedAt: string;
   status: "skipped" | "submitted" | "failed";
   reason?: string;
+  stepHistory?: Array<{
+    step: string;
+    status: "ok" | "skipped" | "failed";
+    message?: string;
+    at: string;
+  }>;
 };

@@ -10,6 +10,13 @@ export type MonitorWorker = {
   trigger: () => void;
 };
 
+function isValidTaskDetail(detail: {
+  title: string;
+  description: string;
+}): boolean {
+  return detail.title.trim().length > 0 && detail.description.trim().length > 0;
+}
+
 export async function startMonitorWorker(signal: AbortSignal): Promise<MonitorWorker> {
   const history = await loadHistory(config.seenIdsPath);
   const attemptedIds = new Set(Object.keys(history));
@@ -83,13 +90,30 @@ export async function startMonitorWorker(signal: AbortSignal): Promise<MonitorWo
         for (const workId of workIds) {
           log("monitor", `cycle=${cycle} open_task_link work_id=${workId}`);
           try {
-            const detail = await scrapeTaskDetail(page, workId);
+            let detail = await scrapeTaskDetail(page, workId);
+            if (!isValidTaskDetail(detail)) {
+              log("monitor", `cycle=${cycle} detail_invalid work_id=${workId} retry=1`);
+              detail = await scrapeTaskDetail(page, workId);
+            }
+            if (!isValidTaskDetail(detail)) {
+              log("monitor", `cycle=${cycle} cannot submit on this task work_id=${workId}`);
+              history[workId] = {
+                attemptedAt: new Date().toISOString(),
+                status: "failed",
+                reason: "invalid_detail",
+              };
+              attemptedIds.add(workId);
+              await saveHistory(config.seenIdsPath, history);
+              await openDashboardWhileIdle();
+              continue;
+            }
             log("monitor", `cycle=${cycle} detail_loaded work_id=${workId} title="${detail.title.slice(0, 80)}"`);
             const result = await submitBid(page, detail);
             history[workId] = {
               attemptedAt: result.attemptedAt,
               status: result.status,
               reason: result.reason,
+              stepHistory: result.stepHistory,
             };
             attemptedIds.add(workId);
             await saveHistory(config.seenIdsPath, history);
