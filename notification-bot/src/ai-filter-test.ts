@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import { Mistral } from "@mistralai/mistralai";
 import { config } from "./config.js";
 import type { ScrapedTask } from "./types.js";
 
@@ -8,18 +8,29 @@ type AiDecision = {
 };
 
 let warnedMissingPrompt = false;
-let client: OpenAI | null = null;
+let client: Mistral | null = null;
+let selectedModel: string | null = null;
 
-function getClient(): OpenAI | null {
+function resolveMistralModel(): string {
+  const envModel = process.env.MISTRAL_MODEL?.trim();
+  if (envModel) return envModel;
+
+  const configured = config.aiModel?.trim();
+  if (configured && !configured.includes("/")) return configured;
+
+  return "mistral-small-latest";
+}
+
+function getClient(): Mistral | null {
   if (client) return client;
 
-  const apiKey = process.env.INFERENCE_API_KEY;
-  const baseURL = process.env.INFERENCE_BASE_URL;
-  if (!apiKey || !baseURL) return null;
+  const mistralApiKey = process.env.MISTRAL_API_KEY;
+  if (!mistralApiKey) return null;
 
-  client = new OpenAI({
-    apiKey,
-    baseURL,
+  selectedModel = resolveMistralModel();
+
+  client = new Mistral({
+    apiKey: mistralApiKey,
   });
 
   return client;
@@ -50,17 +61,17 @@ export async function isTaskSuitableByAi(task: ScrapedTask): Promise<AiDecision>
     return { suitable: true, reason: "prompt-missing" };
   }
 
-  const inferenceClient = getClient();
-  if (!inferenceClient) {
+  const mistralClient = getClient();
+  if (!mistralClient) {
     console.log(`[ai-filter][${task.workId}] config_missing`);
     return {
       suitable: false,
-      reason: "INFERENCE_API_KEY or INFERENCE_BASE_URL is not set",
+      reason: "MISTRAL_API_KEY is not set",
     };
   }
 
-  const completion = await inferenceClient.chat.completions.create({
-    model: process.env.INFERENCE_MODEL ?? config.aiModel,
+  const completion = await mistralClient.chat.complete({
+    model: selectedModel ?? config.aiModel,
     messages: [
       {
         role: "user",
