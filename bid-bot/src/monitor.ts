@@ -5,6 +5,7 @@ import { loadHistory, saveHistory } from "./store.js";
 import { takeQueuedWorkIds } from "./queue-store.js";
 import { scrapeTaskDetail } from "./lancers/detail.js";
 import { error, log } from "./logger.js";
+import { studyNativeJapanese } from "./japanese-study.js";
 
 export type MonitorWorker = {
   trigger: () => void;
@@ -25,6 +26,7 @@ export async function startMonitorWorker(signal: AbortSignal): Promise<MonitorWo
   let cycle = 0;
   let isProcessing = false;
   let pendingTrigger = false;
+  let processedPropertyCount = 0;
 
   const closeBrowser = async () => {
     await context.close();
@@ -88,6 +90,18 @@ export async function startMonitorWorker(signal: AbortSignal): Promise<MonitorWo
         }
 
         for (const workId of workIds) {
+          processedPropertyCount += 1;
+          // const studyEvery = config.japaneseStudyEveryNProperties;
+          // if (studyEvery > 0 && processedPropertyCount % studyEvery === 0) {
+          //   void studyNativeJapanese(`auto-monitor-${processedPropertyCount}`).catch((err) => {
+          //     error(
+          //       "monitor",
+          //       `study-japanese failed property_count=${processedPropertyCount}`,
+          //       err,
+          //     );
+          //   });
+          // }
+
           log("monitor", `cycle=${cycle} open_task_link work_id=${workId}`);
           try {
             let detail = await scrapeTaskDetail(page, workId);

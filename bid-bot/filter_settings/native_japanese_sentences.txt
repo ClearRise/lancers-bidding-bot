@@ -1,0 +1,8 @@
+# Add real Japanese native sentences below (one sentence per line).
+# Used by "npm run study:japanese" and periodic auto-study in bid-bot monitor.
+
+ご連絡ありがとうございます。内容を確認のうえ、最適な進め方をご提案いたします。
+要件を丁寧にすり合わせ、納期と品質の両立を重視して対応いたします。
+不明点は事前に確認し、認識のずれがないように進行いたします。
+まずは小さく検証し、問題がないことを確認してから本実装に入ります。
+必要に応じて改善案も含めてご提案し、継続的に品質を高めます。

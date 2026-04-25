@@ -34,6 +34,7 @@ const schema = z.object({
     (v) => (v === "" || v === undefined ? "false" : v),
     z.enum(["true", "false"]).transform((x) => x !== "false"),
   ),
+  JAPANESE_STUDY_EVERY_N_PROPERTIES: z.coerce.number().int().positive().default(10),
 });
 
 const parsed = schema.safeParse(process.env);
@@ -75,5 +76,6 @@ export const config = {
   bidQueuePath: e.BID_QUEUE_PATH,
   enableMonitor: e.ENABLE_MONITOR,
   enableAiProposal: e.ENABLE_AI_PROPOSAL,
+  japaneseStudyEveryNProperties: e.JAPANESE_STUDY_EVERY_N_PROPERTIES,
   proposalAiPromptTemplate: loadTextFile("../filter_settings/proposal_prompt.txt"),
 };

@@ -4,7 +4,7 @@ Start the proposal with the following exact text:
 「はじめまして
 ECサイトから業務システムまで幅広く開発を行っており、設計〜実装まで対応しています。」
 After the introduction, briefly state that you can handle the project, referring naturally to similar types of work or experience. Keep this grounded and practical, without sounding like self-praise.
-Then, demonstrate your understanding of the project by mentioning a few specific points (around 2–4) from the description. Highlight what seems important in terms of structure, functionality, or operation, and include any relevant technical considerations in a natural way.
+Then, demonstrate your understanding of the project by mentioning important points as detail as possible from the description. Highlight what seems important in terms of structure, functionality, or operation, and include any relevant technical considerations in a natural way.
 Next, explain how you would proceed with the work in a realistic sequence, such as requirements clarification, design, implementation, testing, and delivery. Be concrete about what you would actually do at each stage, rather than speaking abstractly.
 If applicable, include one realistic risk or potential issue that might arise during the project, and briefly explain how you would handle or mitigate it.
 If there are unclear points in the project description, you may include up to three simple and practical clarification questions.
@@ -12,7 +12,7 @@ Keep the tone polite, calm, and professional throughout, as commonly used in Jap
 End the proposal naturally with:
 「まずは一度お話できれば嬉しいです。」
 Do not include generic phrases, keyword lists, or any guarantees. Also, do not mention external communication tools.
-If it is helpful and clearly relevant, you may include up to eight past work links from the provided list. Only include links that similar to the project context, and do not add links unnecessarily.
+If it is helpful and clearly relevant, you may include more than 5 past work links from the provided list. Only include links that similar to the project context, and do not add links unnecessarily.
 - https://youka81.shop-pro.jp/ (ColorMeShop) 
 - https://shinjikoshijimi.shop-pro.jp/ (ColorMeShop) 
 - https://risshodo.shop-pro.jp/ (ColorMeShop) 

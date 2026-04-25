@@ -47,6 +47,14 @@ function toDeliverDate(deadline: string | null): string {
   return `${d.getFullYear()}-${month}-${day}`;
 }
 
+function sanitizeProposalText(text: string): string {
+  return text
+    .replace(/\*\*/g, "")
+    .replace(/^\s*---+\s*$/gm, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 async function ensureNdaAgreement(page: Page): Promise<void> {
   const checkbox = page.locator(selectors.ndaAgreementCheckbox).first();
   if (!(await checkbox.count())) return;
@@ -191,16 +199,18 @@ export async function submitBid(page: Page, task: TaskDetail): Promise<BidResult
     };
   }
   
-  console.log("[bid] proposal created");
-  console.log("[bid] ============proposal start================");
-  console.log(aiProposal);
-  console.log("[bid] ============proposal end================");
-
   // 3) Fill proposal detail text area.
   console.log("[bid] proposal description filling...");
   try {
-    const finalProposal =
-      aiProposal ?? "はじめまして。募集内容を確認しました。詳細をすり合わせの上で迅速に対応いたします。";
+    const finalProposal = sanitizeProposalText(
+      aiProposal ?? "はじめまして。募集内容を確認しました。詳細をすり合わせの上で迅速に対応いたします。",
+    );
+
+    console.log("[bid] proposal created");
+    console.log("[bid] ============proposal start================");
+    console.log(finalProposal);
+    console.log("[bid] ============proposal end================");
+  
     await proposalDescription.scrollIntoViewIfNeeded().catch(() => undefined);
     await proposalDescription.fill(finalProposal);
     recordStep("proposal-description-fill", "ok");

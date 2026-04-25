@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "tsx src/index.ts",
+    "study:japanese": "tsx src/japanese-study.ts",
     "session:save": "tsx scripts/save-session.ts",
     "check": "tsc --noEmit"
   },
