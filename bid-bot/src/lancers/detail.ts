@@ -41,6 +41,30 @@ export async function scrapeTaskDetail(page: Page, workId: string): Promise<Task
       .replace(/\s+/g, " ")
       .trim();
 
+    let clientName: string | null = null;
+    const clientInfoDefinitionList = document.querySelector("dl.c-definition-list");
+    if (clientInfoDefinitionList) {
+      const ddNodes = Array.from(clientInfoDefinitionList.querySelectorAll("dd"));
+      if (ddNodes.length >= 2) {
+        const normalizedClientText = (ddNodes[1]?.textContent ?? "")
+          .replace(/\u00a0/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+        if (normalizedClientText) {
+          const clientParts = normalizedClientText
+            .split("/")
+            .map((part) => part.trim())
+            .filter(Boolean);
+          if (clientParts.length >= 2) {
+            // Prefer display name when available: "id / name"
+            clientName = clientParts[1] || clientParts[0] || null;
+          } else {
+            clientName = clientParts[0] || null;
+          }
+        }
+      }
+    }
+
     let deadline: string | null = null;
     const definitionLists = Array.from(document.querySelectorAll("dl.c-definition-list"));
     const detailRoot = definitionLists.length > 0 ? definitionLists[definitionLists.length - 1] : null;
@@ -55,7 +79,7 @@ export async function scrapeTaskDetail(page: Page, workId: string): Promise<Task
       }
     }
 
-    return { title, description, budgetText, budgetMinJpy, budgetMaxJpy, deadline };
+    return { title, description, clientName, budgetText, budgetMinJpy, budgetMaxJpy, deadline };
   }, selectors);
 
   return {
@@ -63,6 +87,7 @@ export async function scrapeTaskDetail(page: Page, workId: string): Promise<Task
     url,
     title: detail.title,
     description: detail.description,
+    clientName: detail.clientName,
     budgetText: detail.budgetText || null,
     budgetMinJpy: detail.budgetMinJpy,
     budgetMaxJpy: detail.budgetMaxJpy,

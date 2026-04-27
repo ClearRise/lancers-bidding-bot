@@ -17,10 +17,12 @@ export type TaskDetail = {
   url: string;
   title: string;
   description: string;
+  clientName: string | null;
   budgetText: string | null;
   budgetMinJpy: number | null;
   budgetMaxJpy: number | null;
   deadline: string | null;
+  dashboardUrlIndex?: number | null;
 };
 
 export type BidResult = {

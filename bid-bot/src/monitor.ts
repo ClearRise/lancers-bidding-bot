@@ -2,7 +2,7 @@ import { config } from "./config.js";
 import { openContext } from "./browser.js";
 import { submitBid } from "./lancers/bid.js";
 import { loadHistory, saveHistory } from "./store.js";
-import { takeQueuedWorkIds } from "./queue-store.js";
+import { takeQueuedTasks } from "./queue-store.js";
 import { scrapeTaskDetail } from "./lancers/detail.js";
 import { error, log } from "./logger.js";
 import { studyNativeJapanese } from "./japanese-study.js";
@@ -77,19 +77,20 @@ export async function startMonitorWorker(signal: AbortSignal): Promise<MonitorWo
         cycle += 1;
         log("monitor", `cycle=${cycle} start`);
 
-        const queued = await takeQueuedWorkIds(config.bidQueuePath, config.maxBidsPerCycle);
-        const workIds = queued.workIds.filter((workId) => !attemptedIds.has(workId));
+        const queued = await takeQueuedTasks(config.bidQueuePath, config.maxBidsPerCycle);
+        const tasks = queued.tasks.filter((task) => !attemptedIds.has(task.workId));
         log(
           "monitor",
-          `cycle=${cycle} dequeued=${queued.workIds.length} candidates=${workIds.length} remaining_queue=${queued.queueSize}`,
+          `cycle=${cycle} dequeued=${queued.tasks.length} candidates=${tasks.length} remaining_queue=${queued.queueSize}`,
         );
 
-        if (workIds.length === 0) {
+        if (tasks.length === 0) {
           await openDashboardWhileIdle();
           break;
         }
 
-        for (const workId of workIds) {
+        for (const queuedTask of tasks) {
+          const { workId, dashboardUrlIndex } = queuedTask;
           processedPropertyCount += 1;
           // const studyEvery = config.japaneseStudyEveryNProperties;
           // if (studyEvery > 0 && processedPropertyCount % studyEvery === 0) {
@@ -121,6 +122,7 @@ export async function startMonitorWorker(signal: AbortSignal): Promise<MonitorWo
               await openDashboardWhileIdle();
               continue;
             }
+            detail = { ...detail, dashboardUrlIndex };
             log("monitor", `cycle=${cycle} detail_loaded work_id=${workId} title="${detail.title.slice(0, 80)}"`);
             const result = await submitBid(page, detail);
             history[workId] = {

@@ -6,6 +6,7 @@ import { error, log } from "./logger.js";
 type NotifyPayload = {
   source?: string;
   workId?: string;
+  dashboardUrlIndex?: number;
 };
 
 function readBody(req: IncomingMessage): Promise<string> {
@@ -21,6 +22,14 @@ function readBody(req: IncomingMessage): Promise<string> {
 
 function isValidPayload(payload: NotifyPayload): payload is Required<Pick<NotifyPayload, "workId">> & NotifyPayload {
   return typeof payload.workId === "string" && payload.workId.length > 0;
+}
+
+function parseDashboardUrlIndex(payload: NotifyPayload): number | null {
+  if (payload.dashboardUrlIndex == null) return null;
+  if (Number.isInteger(payload.dashboardUrlIndex) && payload.dashboardUrlIndex >= 0) {
+    return payload.dashboardUrlIndex;
+  }
+  return null;
 }
 
 function json(res: ServerResponse, status: number, body: unknown): void {
@@ -65,9 +74,13 @@ export async function startApiServerWithHooks(
           return json(res, 400, { ok: false, error: "invalid_payload" });
         }
 
-        const result = await enqueueTask(config.bidQueuePath, payload.workId);
+        const dashboardUrlIndex = parseDashboardUrlIndex(payload);
+        const result = await enqueueTask(config.bidQueuePath, payload.workId, dashboardUrlIndex);
         if (result.added) {
-          log("api", `queued work_id=${payload.workId} queue_size=${result.queueSize}`);
+          log(
+            "api",
+            `queued work_id=${payload.workId} dashboard_url_index=${dashboardUrlIndex ?? "n/a"} queue_size=${result.queueSize}`,
+          );
           hooks.onTaskQueued?.();
         } else {
           log("api", `duplicate_ignored work_id=${payload.workId}`);

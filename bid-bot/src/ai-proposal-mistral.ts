@@ -22,6 +22,7 @@ function createPrompt(detail: TaskDetail): string {
     .replaceAll("{{WORK_ID}}", detail.workId)
     .replaceAll("{{TITLE}}", detail.title)
     .replaceAll("{{DESCRIPTION}}", detail.description)
+    .replaceAll("{{CLIENT_NAME}}", detail.clientName ?? "")
     .replaceAll("{{BUDGET_TEXT}}", detail.budgetText ?? "")
     .replaceAll("{{BUDGET_MIN_JPY}}", detail.budgetMinJpy != null ? String(detail.budgetMinJpy) : "")
     .replaceAll("{{BUDGET_MAX_JPY}}", detail.budgetMaxJpy != null ? String(detail.budgetMaxJpy) : "")
@@ -51,8 +52,6 @@ function extractText(result: unknown): string {
 }
 
 export async function generateProposalText(detail: TaskDetail): Promise<string | null> {
-  if (!config.enableAiProposal) return null;
-
   const prompt = createPrompt(detail);
   if (!prompt) {
     if (!warnedMissingPrompt) {
