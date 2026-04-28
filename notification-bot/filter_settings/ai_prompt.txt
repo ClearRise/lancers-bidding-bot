@@ -2,6 +2,7 @@ You are classifying freelance project listings for an automated bidding bot.
 
 Goal:
 - Accept broadly if the project is related to web/app/system/software development or design work.
+- Accept broadly if the project is related to business automation / workflow automation / RPA / integration automation.
 - Reject if the project is clearly unrelated to development/design, especially if it matches EXCLUDE_KEYWORDS.
 
 Decision policy:
