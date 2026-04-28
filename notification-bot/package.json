@@ -6,8 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "tsx src/index.ts",
-    "session:save": "tsx scripts/save-session.ts",
-    "toast:register": "tsx scripts/register-windows-toast.ts"
+    "session:save": "tsx scripts/save-session.ts"
   },
   "engines": {
     "node": ">=20"
@@ -15,16 +14,13 @@
   "dependencies": {
     "@heyputer/puter.js": "^2.2.15",
     "@mistralai/mistralai": "^2.2.1",
-    "clipboardy": "^4.0.0",
     "dotenv": "^16.4.5",
-    "node-notifier": "^10.0.1",
     "openai": "^6.34.0",
     "playwright": "^1.49.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/node": "^22.10.1",
-    "@types/node-notifier": "^8.0.5",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   }

@@ -30,6 +30,11 @@ const schema = z.object({
     (v) => (v === "" || v === undefined ? "false" : v),
     z.enum(["true", "false"]).transform((x) => x !== "false"),
   ),
+  DESKTOP_NOTIFICATION: z.preprocess(
+    (v) => (v === "" || v === undefined ? "true" : v),
+    z.enum(["true", "false"]).transform((x) => x !== "false"),
+  ),
+  WINDOWS_TOAST_APP_ID: z.string().default("Cursor"),
   ENABLE_AI_PROPOSAL: z.preprocess(
     (v) => (v === "" || v === undefined ? "false" : v),
     z.enum(["true", "false"]).transform((x) => x !== "false"),
@@ -79,6 +84,8 @@ export const config = {
   bidBotSecret: e.BID_BOT_SECRET,
   bidQueuePath: e.BID_QUEUE_PATH,
   enableMonitor: e.ENABLE_MONITOR,
+  desktopNotification: e.DESKTOP_NOTIFICATION,
+  windowsToastAppId: e.WINDOWS_TOAST_APP_ID,
   proposalMode: e.BID_PROPOSAL_MODE ?? (e.ENABLE_AI_PROPOSAL ? "ai" : "template"),
   enableAiProposal: e.ENABLE_AI_PROPOSAL,
   japaneseStudyEveryNProperties: e.JAPANESE_STUDY_EVERY_N_PROPERTIES,

@@ -1,4 +1,4 @@
-お世話になります。MIRAI-STACKと申します。
+お世話になります。
 
 ホームページのリニューアル、コーポレートサイト、サービスサイト、LP制作など幅広く対応しております。
 この度は「{{TITLE}}」のご依頼内容を拝見し、ぜひお力添えできましたら幸いに存じ、ご連絡いたしました。
@@ -12,81 +12,12 @@ Webデザイン技能検定、Adobe認定資格、ネットワーク技術資格
 案件を進めるうえでは、お客様のご意向やイメージを丁寧に汲み取り、認識のズレが起きないよう細かく確認しながら進行いたします。
 ※専門用語は極力使わず、分かりやすい説明を心がけております。
 
-素材や文章が未確定の段階でも問題ございません。
-コーディングのみ、デザインのみのご依頼にも対応可能です。
-できること・できないことを明確にし、無理のない進行をご提案いたします。
-また、お忙しいお客様のご負担にならないよう、確認事項は整理して共有し、進捗も分かりやすくご報告いたします。
-
 本件につきましては、ご予算{{BUDGET_MAX_JPY}}円以内にて、納期{{DEADLINE}}までに問題なく対応可能でございます。
 ご希望がございましたら、さらに前倒しでの納品にも柔軟に対応いたします。
  
 ただし、もしお急ぎでない場合には、納期に多少の余裕をいただけますと、より安定した品質でご提供できればと存じます。
 
 本件をきっかけに、{{CLIENT_NAME}}様と長期的にご一緒できるパートナーとして、改善・運用まで継続的にご支援できましたら幸いです。
-その際は、責任をもって対応させていただきます。
-
-█ 実績
-▼コーポレートサイト
-https://hps-trade.co.th
-https://microtechnology.co.jp
-https://envipro.jp
-https://plus-synergy.com
-https://logicore-osaka.jp
-https://partner.cekai.jp
-https://bluenotejapan.jp
-https://12-office.com
-https://hokuei.co.jp
-https://liginc.co.jp
-https://cki-group.jp
-https://pearl-kaseihin.co.jp
-▁▁▁▁▁▁▁▁▁▁▁▁
-
-▼医療・クリニック系サイト
-https://ryo-dentalclinic.jp/ortho-mouthpiece-lp
-https://misa.clinic/lp-keana
-https://shimashikain.com
-https://hiraishi-clinic.com
-https://shiseido.co.jp/anessa
-https://sugamoto.jp
-▁▁▁▁▁▁▁▁▁▁▁▁
-
-▼美容・女性向けサイト
-https://kose.co.jp/esprique
-https://nailquick.co.jp
-https://strong.koikeya.co.jp
-https://kose-clearpro.com
-https://eveunblue.jp
-https://panna.cc/lineup/pannas.html
-https://kidacademy-nursery.jp
-https://rirus.jp
-https://creocontact.jp
-https://deim.jp
-▁▁▁▁▁▁▁▁▁▁▁▁▁
- 
-▼ECサイト（Shopify）
-https://shiawase-honpo.net/
-https://lix-online.com/
-https://carome.jp
-https://www.seiban.co.jp
-https://www.mikihouse.co.jp
-https://weekend.jp
-▁▁▁▁▁▁▁▁▁▁▁▁▁
-
-▼その他LP制作
-https://shinkokyu.jp
-https://squid-mania.jp
-https://eizo.co.jp/products/lcd/sp_flt
-https://asahiinryo.co.jp/oishiimizu/sp
-https://la-coco.com
-https://banshokan.co.jp
-https://lgo-wu.jp/f-water
-https://activation-service.jp/lp/camera
-https://be-beauty.jp/202504_renewal
-▁▁▁▁▁▁▁▁▁▁▁▁▁
-
-█ 稼働時間
-平日：9:00〜18:00（柔軟に対応可）
-土日：10:00〜16:00（ご相談可能）
 
 お気軽にご相談いただけますと幸いです。
 何卒よろしくお願いいたします。

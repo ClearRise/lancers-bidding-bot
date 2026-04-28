@@ -6,6 +6,7 @@ import { takeQueuedTasks } from "./queue-store.js";
 import { scrapeTaskDetail } from "./lancers/detail.js";
 import { error, log } from "./logger.js";
 import { studyNativeJapanese } from "./japanese-study.js";
+import { notifyBidResult } from "./notify-desktop.js";
 
 export type MonitorWorker = {
   trigger: () => void;
@@ -134,6 +135,16 @@ export async function startMonitorWorker(signal: AbortSignal): Promise<MonitorWo
             attemptedIds.add(workId);
             await saveHistory(config.seenIdsPath, history);
             log("monitor", `cycle=${cycle} bid_result work_id=${workId} status=${result.status}`);
+            void notifyBidResult({
+              taskUrl: detail.url,
+              title: detail.title,
+              status: result.status,
+              budgetMinJpy: detail.budgetMinJpy,
+              budgetMaxJpy: detail.budgetMaxJpy,
+              reason: result.reason,
+            }).catch((notifyErr) => {
+              error("monitor", `cycle=${cycle} bid_notify_failed work_id=${workId}`, notifyErr);
+            });
           } catch (err) {
             error("monitor", `cycle=${cycle} bid_failed work_id=${workId}`, err);
             history[workId] = {
@@ -143,6 +154,16 @@ export async function startMonitorWorker(signal: AbortSignal): Promise<MonitorWo
             };
             attemptedIds.add(workId);
             await saveHistory(config.seenIdsPath, history);
+            void notifyBidResult({
+              taskUrl: `https://www.lancers.jp/work/propose_start/${workId}?proposeReferer=`,
+              title: "Unknown task",
+              status: "failed",
+              budgetMinJpy: null,
+              budgetMaxJpy: null,
+              reason: "exception",
+            }).catch((notifyErr) => {
+              error("monitor", `cycle=${cycle} bid_notify_failed work_id=${workId}`, notifyErr);
+            });
           }
         }
 

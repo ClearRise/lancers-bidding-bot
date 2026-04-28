@@ -5,18 +5,22 @@ import { isTaskSuitable } from "./filters.js";
 import type { ScrapedTask } from "./types.js";
 import { loadSeenIds, saveSeenIds } from "./seen-store.js";
 import { notifyBidBot } from "./notify-bid-bot.js";
-import { notifyMatchedTask } from "./notify-desktop.js";
+
+type QueuedTask = {
+  task: ScrapedTask;
+  dashboardUrlIndex: number;
+};
 
 export async function runMonitorLoop(signal: AbortSignal): Promise<void> {
   const seen = await loadSeenIds(config.seenIdsPath);
   let processCount = 0;
   let saveLock: Promise<void> = Promise.resolve();
-  const taskQueue: ScrapedTask[] = [];
+  const taskQueue: QueuedTask[] = [];
   let queueWaiter: (() => void) | null = null;
   const workerBootstrapDone = config.dashboardUrls.map(() => seen.size > 0 || !config.bootstrapSilent);
 
-  const enqueueTask = (task: ScrapedTask) => {
-    taskQueue.push(task);
+  const enqueueTask = (task: ScrapedTask, dashboardUrlIndex: number) => {
+    taskQueue.push({ task, dashboardUrlIndex });
     if (queueWaiter) {
       const resolve = queueWaiter;
       queueWaiter = null;
@@ -84,7 +88,7 @@ export async function runMonitorLoop(signal: AbortSignal): Promise<void> {
             console.log(`[monitor][worker ${workerIndex + 1}][cycle ${cycle}] bootstrap_complete`);
           } else {
             for (const task of tasks) {
-              enqueueTask(task);
+              enqueueTask(task, workerIndex);
             }
           }
         } catch (err) {
@@ -109,8 +113,9 @@ export async function runMonitorLoop(signal: AbortSignal): Promise<void> {
     const processor = (async () => {
       while (!signal.aborted) {
         await waitForTask();
-        const task = taskQueue.shift();
-        if (!task) continue;
+        const queuedTask = taskQueue.shift();
+        if (!queuedTask) continue;
+        const { task, dashboardUrlIndex } = queuedTask;
         processCount += 1;
         if (seen.has(task.workId)) continue;
 
@@ -123,10 +128,8 @@ export async function runMonitorLoop(signal: AbortSignal): Promise<void> {
 
         console.log(`[monitor][process ${processCount}][task ${task.workId}] result=matched`);
         try {
-          console.log(`[monitor][process ${processCount}][task ${task.workId}] notifying desktop match`);
-          await notifyMatchedTask(task);
           console.log(`[monitor][process ${processCount}][task ${task.workId}] notifying bid bot`);
-          void notifyBidBot(task).catch((err) => {
+          void notifyBidBot(task, dashboardUrlIndex).catch((err) => {
             console.error(
               `[monitor][process ${processCount}][task ${task.workId}] notify_bid_bot=failed`,
               err,
