@@ -2,10 +2,11 @@ import { config } from "./config.js";
 import { openContext } from "./browser.js";
 import { submitBid } from "./lancers/bid.js";
 import { loadHistory, saveHistory } from "./store.js";
-import { takeQueuedWorkIds } from "./queue-store.js";
+import { takeQueuedTasks } from "./queue-store.js";
 import { scrapeTaskDetail } from "./lancers/detail.js";
 import { error, log } from "./logger.js";
 import { studyNativeJapanese } from "./japanese-study.js";
+import { notifyBidResult } from "./notify-desktop.js";
 
 export type MonitorWorker = {
   trigger: () => void;
@@ -77,19 +78,20 @@ export async function startMonitorWorker(signal: AbortSignal): Promise<MonitorWo
         cycle += 1;
         log("monitor", `cycle=${cycle} start`);
 
-        const queued = await takeQueuedWorkIds(config.bidQueuePath, config.maxBidsPerCycle);
-        const workIds = queued.workIds.filter((workId) => !attemptedIds.has(workId));
+        const queued = await takeQueuedTasks(config.bidQueuePath, config.maxBidsPerCycle);
+        const tasks = queued.tasks.filter((task) => !attemptedIds.has(task.workId));
         log(
           "monitor",
-          `cycle=${cycle} dequeued=${queued.workIds.length} candidates=${workIds.length} remaining_queue=${queued.queueSize}`,
+          `cycle=${cycle} dequeued=${queued.tasks.length} candidates=${tasks.length} remaining_queue=${queued.queueSize}`,
         );
 
-        if (workIds.length === 0) {
+        if (tasks.length === 0) {
           await openDashboardWhileIdle();
           break;
         }
 
-        for (const workId of workIds) {
+        for (const queuedTask of tasks) {
+          const { workId, dashboardUrlIndex } = queuedTask;
           processedPropertyCount += 1;
           // const studyEvery = config.japaneseStudyEveryNProperties;
           // if (studyEvery > 0 && processedPropertyCount % studyEvery === 0) {
@@ -121,6 +123,7 @@ export async function startMonitorWorker(signal: AbortSignal): Promise<MonitorWo
               await openDashboardWhileIdle();
               continue;
             }
+            detail = { ...detail, dashboardUrlIndex };
             log("monitor", `cycle=${cycle} detail_loaded work_id=${workId} title="${detail.title.slice(0, 80)}"`);
             const result = await submitBid(page, detail);
             history[workId] = {
@@ -132,6 +135,16 @@ export async function startMonitorWorker(signal: AbortSignal): Promise<MonitorWo
             attemptedIds.add(workId);
             await saveHistory(config.seenIdsPath, history);
             log("monitor", `cycle=${cycle} bid_result work_id=${workId} status=${result.status}`);
+            void notifyBidResult({
+              taskUrl: detail.url,
+              title: detail.title,
+              status: result.status,
+              budgetMinJpy: detail.budgetMinJpy,
+              budgetMaxJpy: detail.budgetMaxJpy,
+              reason: result.reason,
+            }).catch((notifyErr) => {
+              error("monitor", `cycle=${cycle} bid_notify_failed work_id=${workId}`, notifyErr);
+            });
           } catch (err) {
             error("monitor", `cycle=${cycle} bid_failed work_id=${workId}`, err);
             history[workId] = {
@@ -141,6 +154,16 @@ export async function startMonitorWorker(signal: AbortSignal): Promise<MonitorWo
             };
             attemptedIds.add(workId);
             await saveHistory(config.seenIdsPath, history);
+            void notifyBidResult({
+              taskUrl: `https://www.lancers.jp/work/propose_start/${workId}?proposeReferer=`,
+              title: "Unknown task",
+              status: "failed",
+              budgetMinJpy: null,
+              budgetMaxJpy: null,
+              reason: "exception",
+            }).catch((notifyErr) => {
+              error("monitor", `cycle=${cycle} bid_notify_failed work_id=${workId}`, notifyErr);
+            });
           }
         }
 

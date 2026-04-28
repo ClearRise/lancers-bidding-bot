@@ -1,11 +1,7 @@
 import type { Page } from "playwright";
 import { selectors } from "./selectors.js";
 import { config } from "../config.js";
-// import { generateProposalText } from "../ai-proposal-openai.js";
-// import { generateProposalText } from "../ai-proposal-base44.js";
-// import { generateProposalText } from "../ai-proposal.js";
-// import { generateProposalText } from "../ai-proposal-groq.js";
-import { generateProposalText } from "../ai-proposal-mistral.js";
+import { buildProposalText } from "../proposal-text.js";
 import type { BidResult, TaskDetail } from "../types.js";
 
 const STATIC_ESTIMATE_TEXT = `詳細はメッセージにてご相談できればと思っております。`;
@@ -181,20 +177,20 @@ export async function submitBid(page: Page, task: TaskDetail): Promise<BidResult
     recordStep("proposal-estimate-fill", "skipped", "field not found");
   }
 
-  console.log("[bid] ai proposal creating...");
-  const aiProposal = await generateProposalText(task).catch((error) => {
+  console.log(`[bid] proposal creating mode=${config.proposalMode}...`);
+  const createdProposal = await buildProposalText(task).catch((error) => {
     const message = error instanceof Error ? error.message : String(error);
-    console.error(`[bid] AI proposal generation threw an unexpected error: ${message}`);
+    console.error(`[bid] proposal generation threw an unexpected error: ${message}`);
     return null;
   });
   
-  if(!aiProposal) {
-    recordStep("ai-proposal-generation", "failed", "ai proposal generation failed");
+  if (!createdProposal) {
+    recordStep("proposal-generation", "failed", `proposal generation failed mode=${config.proposalMode}`);
     return {
       workId: task.workId,
       attemptedAt: new Date().toISOString(),
       status: "failed",
-      reason: "ai_proposal_generation_failed",
+      reason: "proposal_generation_failed",
       stepHistory,
     };
   }
@@ -203,7 +199,7 @@ export async function submitBid(page: Page, task: TaskDetail): Promise<BidResult
   console.log("[bid] proposal description filling...");
   try {
     const finalProposal = sanitizeProposalText(
-      aiProposal ?? "はじめまして。募集内容を確認しました。詳細をすり合わせの上で迅速に対応いたします。",
+      createdProposal,
     );
 
     console.log("[bid] proposal created");
@@ -212,7 +208,13 @@ export async function submitBid(page: Page, task: TaskDetail): Promise<BidResult
     console.log("[bid] ============proposal end================");
   
     await proposalDescription.scrollIntoViewIfNeeded().catch(() => undefined);
+    if (config.proposalMode === "template") {
+      await page.waitForTimeout(250);
+    }
     await proposalDescription.fill(finalProposal);
+    if (config.proposalMode === "template") {
+      await page.waitForTimeout(250);
+    }
     recordStep("proposal-description-fill", "ok");
   } catch {
     recordStep("proposal-description-fill", "failed", "fill failed");
@@ -284,7 +286,7 @@ export async function submitBid(page: Page, task: TaskDetail): Promise<BidResult
     recordStep("final-submit-check", "ok", "final submit button found");
     await Promise.all([
       page.waitForLoadState("domcontentloaded"),
-      finalSubmit.click(),
+      // finalSubmit.click(),
     ]);
     await page.waitForTimeout(500);
     recordStep("final-submit-click", "ok");

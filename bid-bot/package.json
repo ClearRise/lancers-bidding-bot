@@ -8,6 +8,7 @@
     "start": "tsx src/index.ts",
     "study:japanese": "tsx src/japanese-study.ts",
     "session:save": "tsx scripts/save-session.ts",
+    "toast:register": "tsx scripts/register-windows-toast.ts",
     "check": "tsc --noEmit"
   },
   "engines": {
@@ -17,6 +18,7 @@
     "@anthropic-ai/sdk": "^0.90.0",
     "@mistralai/mistralai": "^2.2.1",
     "dotenv": "^16.4.5",
+    "node-notifier": "^10.0.1",
     "openai": "^6.34.0",
     "playwright": "^1.49.0",
     "zod": "^3.23.8"

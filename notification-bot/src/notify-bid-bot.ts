@@ -1,7 +1,7 @@
 import { config } from "./config.js";
 import type { ScrapedTask } from "./types.js";
 
-export async function notifyBidBot(task: ScrapedTask): Promise<void> {
+export async function notifyBidBot(task: ScrapedTask, dashboardUrlIndex: number): Promise<void> {
   if (!config.bidBotUrl) {
     console.log("[notify] BID_BOT_URL not set; printing payload only");
     console.log(JSON.stringify(task, null, 2));
@@ -11,6 +11,7 @@ export async function notifyBidBot(task: ScrapedTask): Promise<void> {
   const body = {
     source: "lancers-notification-bot",
     workId: task.workId,
+    dashboardUrlIndex,
     url: task.url,
     title: task.title,
     snippet: task.snippet,

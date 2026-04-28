@@ -33,17 +33,6 @@ const envSchema = z.object({
     (v) => v === "true",
     z.boolean().optional(),
   ),
-  DESKTOP_NOTIFICATION: z.preprocess(
-    (v) => (v === "" || v === undefined ? "true" : v),
-    z.enum(["true", "false"]).transform((x) => x !== "false"),
-  ),
-  /** Absolute or cwd-relative path to toast icon; default is `assets/icons/lancers-badge.jpg`. */
-  NOTIFICATION_ICON_PATH: z.preprocess(emptyToUndef, z.string().optional()),
-  /**
-   * Windows: passed to SnoreToast as `-appID`. Must match the ID used with `npm run toast:register`
-   * (see KDE SnoreToast: Start Menu shortcut + appID replaces the default "SnoreToast" header).
-   */
-  WINDOWS_TOAST_APP_ID: z.string().default("Lancers.NotificationBot"),
   OPENAI_API_KEY: z.preprocess(emptyToUndef, z.string().optional()),
 });
 
@@ -153,9 +142,6 @@ export const config = {
   headless: e.HEADLESS,
   seenIdsPath: e.SEEN_IDS_PATH,
   bootstrapSilent: e.BOOTSTRAP_SILENT ?? true,
-  desktopNotification: e.DESKTOP_NOTIFICATION,
-  notificationIconPath: e.NOTIFICATION_ICON_PATH,
-  windowsToastAppId: e.WINDOWS_TOAST_APP_ID,
   includeKeywords: loadKeywordFile("../filter_settings/include_keywords"),
   excludeKeywords: loadKeywordFile("../filter_settings/exclude_keywords"),
   keywordFilterEnabled: filterSettings.keywordFilter?.enabled ?? true,

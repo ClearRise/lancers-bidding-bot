@@ -30,13 +30,15 @@ function createPrompt(task: ScrapedTask): string {
   const template = config.aiPromptTemplate;
   const snippet = task.snippet.slice(0, config.aiMaxSnippetChars);
   const includeKeywords = config.includeKeywords.join(", ");
+  const excludeKeywords = config.excludeKeywords.join(", ");
 
   if (!template) return "";
 
   return template
     .replaceAll("{{TITLE}}", task.title)
     .replaceAll("{{SNIPPET}}", snippet)
-    .replaceAll("{{INCLUDE_KEYWORDS}}", includeKeywords);
+    .replaceAll("{{INCLUDE_KEYWORDS}}", includeKeywords)
+    .replaceAll("{{EXCLUDE_KEYWORDS}}", excludeKeywords);
 }
 
 export async function isTaskSuitableByAi(task: ScrapedTask): Promise<AiDecision> {
