@@ -79,6 +79,10 @@ export async function startMonitorWorker(signal: AbortSignal): Promise<MonitorWo
         log("monitor", `cycle=${cycle} start`);
 
         const queued = await takeQueuedTasks(config.bidQueuePath, config.maxBidsPerCycle);
+        if (queued.queueSize > 0) {
+          // Continue draining queue in this run even without a new API trigger.
+          pendingTrigger = true;
+        }
         const tasks = queued.tasks.filter((task) => !attemptedIds.has(task.workId));
         log(
           "monitor",
@@ -86,6 +90,10 @@ export async function startMonitorWorker(signal: AbortSignal): Promise<MonitorWo
         );
 
         if (tasks.length === 0) {
+          if (queued.queueSize > 0) {
+            // Next batch still exists; skip idle dashboard and continue immediately.
+            continue;
+          }
           await openDashboardWhileIdle();
           break;
         }
