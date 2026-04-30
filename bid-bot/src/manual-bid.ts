@@ -16,6 +16,15 @@ function parseTaskIds(raw: string): string[] {
   return Array.from(new Set(ids));
 }
 
+function randomDelayMs(minMs: number, maxMs: number): number {
+  const range = maxMs - minMs + 1;
+  return minMs + Math.floor(Math.random() * range);
+}
+
+async function sleep(ms: number): Promise<void> {
+  await new Promise<void>((resolve) => setTimeout(resolve, ms));
+}
+
 async function main(): Promise<void> {
   const raw = await fs.readFile(config.manualBidTaskIdsPath, "utf8");
   const workIds = parseTaskIds(raw);
@@ -44,6 +53,14 @@ async function main(): Promise<void> {
           error: (message, err) => error("manual", message, err),
         },
       });
+
+      const isLast = index === workIds.length - 1;
+      if (!isLast) {
+        const delayMs = randomDelayMs(60_000, 300_000);
+        const delaySec = Math.round(delayMs / 1000);
+        log("manual", `waiting random delay before next bid: ${delaySec}s`);
+        await sleep(delayMs);
+      }
     }
   } finally {
     await context.close();
