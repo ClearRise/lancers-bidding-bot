@@ -26,6 +26,7 @@ const schema = z.object({
   BID_BOT_PORT: z.coerce.number().int().positive().default(3847),
   BID_BOT_SECRET: z.preprocess(emptyToUndefined, z.string().optional()),
   BID_QUEUE_PATH: z.string().default("./bid-queue.json"),
+  MANUAL_BID_TASK_IDS_PATH: z.string().default("./manual-bid-task-ids.txt"),
   ENABLE_MONITOR: z.preprocess(
     (v) => (v === "" || v === undefined ? "false" : v),
     z.enum(["true", "false"]).transform((x) => x !== "false"),
@@ -83,6 +84,7 @@ export const config = {
   bidBotPort: e.BID_BOT_PORT,
   bidBotSecret: e.BID_BOT_SECRET,
   bidQueuePath: e.BID_QUEUE_PATH,
+  manualBidTaskIdsPath: e.MANUAL_BID_TASK_IDS_PATH,
   enableMonitor: e.ENABLE_MONITOR,
   desktopNotification: e.DESKTOP_NOTIFICATION,
   windowsToastAppId: e.WINDOWS_TOAST_APP_ID,

@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "tsx src/index.ts",
+    "bid:manual": "tsx src/manual-bid.ts",
     "study:japanese": "tsx src/japanese-study.ts",
     "session:save": "tsx scripts/save-session.ts",
     "toast:register": "tsx scripts/register-windows-toast.ts",
